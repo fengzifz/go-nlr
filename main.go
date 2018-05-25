@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+type ReqData struct {
+	Ip, Date, HttpMethod, Path, UserAgent, StatusCode, RenderTime []string
+}
+
 func main() {
 
 	var reqLines []string
@@ -23,68 +27,44 @@ func main() {
 	// Initialize the scanner
 	sc := bufio.NewScanner(fl)
 
-	// Regexp
-	ipReg := regexp.MustCompile(`([0-9]{1,3}\.){3}[0-9]{1,3}`)
-	datetimeReg := regexp.MustCompile(`\d{1,2}\/\w{3}\/\d{1,4}(:[0-9]{1,2}){3} \+([0-9]){1,4}`)
-	httpVersionReg := regexp.MustCompile(`HTTP\/\d.\d`)
-	accessPathReg := regexp.MustCompile(`[A-Z]{3,6} \/[\s\S]* HTTP`)
-	userAgentReg := regexp.MustCompile(`\"Mozilla[\s\S]*\" `)
-	statusCodeAndBodySizeReg := regexp.MustCompile(` [0-9]{3} [0-9]{1,10} `)
-	renderTimeReg := regexp.MustCompile(`\"[0-9]{1,3}.[0-9]{1,3}\"`)
-
 	if sc.Scan() {
 		for sc.Scan() {
 			line := sc.Text()
 
-			reqIp := ""
-			reqDate := ""
-			reqHttpType := ""
-			reqPath := ""
-			reqUserAgent := ""
-			reqStatusCode := ""
-			reqBodySize := ""
-			reqTime := ""
-
-			// Find values what we need
-			accessIp := ipReg.FindAllString(line, -1)
-			accessDate := datetimeReg.FindAllString(line, -1)
-			httpVer := httpVersionReg.FindAllString(line, -1)
-			accessPath := accessPathReg.FindAllString(line, -1)
-			userAgent := userAgentReg.FindAllString(line, -1)
-			statusCode := statusCodeAndBodySizeReg.FindAllString(line, -1)
-			requestTime := renderTimeReg.FindAllString(line, -1)
+			var reqIp, reqDate, reqHttpType, reqPath, reqUserAgent, reqStatusCode, reqBodySize, reqTime string
+			req := readLine(line)
 
 			// Format them
-			if len(accessIp) > 0 {
-				reqIp = accessIp[0]
+			if len(req.Ip) > 0 {
+				reqIp = req.Ip[0]
 			}
 
-			if len(accessDate) > 0 {
-				reqDate = accessDate[0]
+			if len(req.Date) > 0 {
+				reqDate = req.Date[0]
 			}
 
-			if len(httpVer) > 0 {
-				reqHttpType = httpVer[0]
+			if len(req.HttpMethod) > 0 {
+				reqHttpType = req.HttpMethod[0]
 			}
 
-			if len(accessPath) > 0 {
+			if len(req.Path) > 0 {
 				replacer := strings.NewReplacer("HTTP", "", "GET", "", "POST", "", " ", "")
-				reqPath = replacer.Replace(accessPath[0])
+				reqPath = replacer.Replace(req.Path[0])
 			}
 
-			if len(userAgent) > 0 {
+			if len(req.UserAgent) > 0 {
 				replacer := strings.NewReplacer("\"", "", "-", "")
-				reqUserAgent = replacer.Replace(userAgent[0])
+				reqUserAgent = replacer.Replace(req.UserAgent[0])
 			}
 
-			if len(statusCode) > 0 {
-				stringArr := strings.Fields(statusCode[0])
+			if len(req.StatusCode) > 0 {
+				stringArr := strings.Fields(req.StatusCode[0])
 				reqStatusCode = stringArr[0]
 				reqBodySize = stringArr[1]
 			}
 
-			if len(requestTime) > 0 {
-				reqTime = strings.Replace(requestTime[0], "\"", "", -1)
+			if len(req.RenderTime) > 0 {
+				reqTime = strings.Replace(req.RenderTime[0], "\"", "", -1)
 			}
 
 			// Separated by a vertical line
@@ -98,6 +78,22 @@ func main() {
 		writeLine(reqLines, "test.log")
 	}
 
+}
+
+// Read line and find the values I need
+func readLine(line string) ReqData {
+
+	req := ReqData{
+		Ip: regexp.MustCompile(`([0-9]{1,3}\.){3}[0-9]{1,3}`).FindAllString(line, -1),
+		Date: regexp.MustCompile(`\d{1,2}\/\w{3}\/\d{1,4}(:[0-9]{1,2}){3} \+([0-9]){1,4}`).FindAllString(line, -1),
+		HttpMethod: regexp.MustCompile(`HTTP\/\d.\d`).FindAllString(line, -1),
+		Path: regexp.MustCompile(`[A-Z]{3,6} \/[\s\S]* HTTP`).FindAllString(line, -1),
+		UserAgent: regexp.MustCompile(`\"Mozilla[\s\S]*\" `).FindAllString(line, -1),
+		StatusCode: regexp.MustCompile(` [0-9]{3} [0-9]{1,10} `).FindAllString(line, -1),
+		RenderTime: regexp.MustCompile(`\"[0-9]{1,3}.[0-9]{1,3}\"`).FindAllString(line, -1),
+	}
+
+	return req
 }
 
 // Flush write into the file
