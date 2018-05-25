@@ -36,14 +36,7 @@ func main() {
 		for sc.Scan() {
 			line := sc.Text()
 
-			reqIp := ""
-			reqDate := ""
-			reqHttpType := ""
-			reqPath := ""
-			reqUserAgent := ""
-			reqStatusCode := ""
-			reqBodySize := ""
-			reqTime := ""
+			var reqIp, reqDate, reqHttpType, reqPath, reqUserAgent, reqStatusCode, reqBodySize, reqTime string
 
 			// Find values what we need
 			accessIp := ipReg.FindAllString(line, -1)
